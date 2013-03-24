@@ -1,0 +1,27 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="js/libs/jquery-1.9.0/jquery.min.js"></script>
+		<script type="text/javascript" src="js/libs/three.js-r53/three.min.js"></script>
+		<script type="text/javascript" src="js/libs/glmatrix-0.9.5/glMatrix.min.js"></script>
+		
+		<script type="text/javascript">
+			function startWebGL() {
+				var canvas = $("#mycanvas")[0];
+				var gl = canvas.getContext("experimental-webgl");
+				
+				gl.clearColor(0.0, 0.0, 0.0, 1.0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+			}
+		</script>
+	</head>
+	<body onload="startWebGL();">
+		<canvas id="mycanvas" width="800" height="600"></canvas>
+	</body>
+</html>
