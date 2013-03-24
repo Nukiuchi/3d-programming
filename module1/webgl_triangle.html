@@ -1,0 +1,74 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Another triangle example</title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		
+	</head>
+	<body>
+		<canvas id="canvas" width="800" height="600"></canvas>
+		<script type="text/javascript">
+			var canvas = document.getElementById("canvas");
+			var gl = canvas.getContext("experimental-webgl");
+			
+			gl.clearColor(0.0, 1.0, 0.0, 1.0);
+			gl.clear(gl.COLOR_BUFFER_BIT);
+			
+			var vsScript = 
+					  "attribute vec4 vPosition; \n" +
+					  "void main() { \n" +
+					  " gl_Position = vPosition; \n" +
+					  "} ";
+			var fsScript =
+					  "precision mediump float; \n" +
+					  "void main() { \n" +
+					  " gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0); \n" +
+					  "} ";
+			var vs = gl.createShader(gl.VERTEX_SHADER);
+			var fs = gl.createShader(gl.FRAGMENT_SHADER);
+			gl.shaderSource(vs, vsScript);
+			gl.shaderSource(fs, fsScript);
+			
+			gl.compileShader(vs);
+			if(!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+				alert("Vertex Shader:\n" + gl.getShaderInfoLog(vs));
+			}
+			
+			gl.compileShader(fs);
+			if(!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+				alert("Fragment Shader:\n" + gl.getShaderInfoLog(fs));
+			}
+			
+			var program = gl.createProgram();
+			gl.attachShader(program, vs);
+			gl.attachShader(program, fs);
+			gl.linkProgram(program);
+			
+			if(!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+				alert("Shader Program:\n" + gl.getProgramInfoLog(program));
+			}
+			
+			gl.useProgram(program);
+			
+			var vertexPos = gl.getAttribLocation(program, "vPosition");
+			gl.enableVertexAttribArray(vertexPos);
+			
+			var buffer = gl.createBuffer();
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+			
+			var vertices = [
+				0, 1, 0,
+				-1, -1, 0,
+				1, -1, 0
+			];
+			gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+			gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+			gl.vertexAttribPointer(vertexPos, 3, gl.FLOAT, false, 0, 0);
+			gl.drawArrays(gl.TRIANGLES, 0, 3);
+		</script>
+	</body>
+</html>
