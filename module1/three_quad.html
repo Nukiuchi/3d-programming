@@ -9,14 +9,17 @@
 		
 		<script type="text/javascript">
 			function startWebGL() {
+				// Define scene size
 				var HEIGHT = 600;
 				var WIDTH = 800;
 				
+				// Define camera properties
 				var VIEW_ANGLE = 45;
 				var ASPECT = WIDTH/HEIGHT;
 				var NEAR = 0.1;
 				var FAR = 10000.0;
 				
+				// Initialise the scene
 				var renderer = new THREE.WebGLRenderer();
 				var camera = new THREE.PerspectiveCamera(VIEW_ANGLE,
 						ASPECT,
@@ -29,10 +32,11 @@
 				camera.position.z = 300;
 				
 				renderer.setSize(WIDTH, HEIGHT);
-				renderer.setClearColorHex(0x000000, 1);
+				renderer.setClearColorHex(0x333333, 1);
 				
 				$("#container").append(renderer.domElement);
 				
+				// Create geometry for a quad
 				var quadGeometry = new THREE.Geometry();
 				quadGeometry.vertices.push(new THREE.Vector3(-50, -50, 0));
 				quadGeometry.vertices.push(new THREE.Vector3(50, -50, 0));
@@ -42,15 +46,19 @@
 				quadGeometry.faces.push(new THREE.Face4(0,1,2,3, new THREE.Vector3(0,0,1)));
 				quadGeometry.computeBoundingBox();
 				
+				// Create a mesh using the quad geometry
 				var quad = new THREE.Mesh(quadGeometry, 
 						new THREE.MeshPhongMaterial({
-							color: 0xCC0000
+							color: 0xAA0000,
+							specular: 0xFF0000,
+							shininess: 8
 						})
 					);
 				quad.position.x = -60;
 				quad.rotation.y = 1;
 				scene.add(quad);
 				
+				// Create a mesh using sphere's geometry
 				var sphere = new THREE.Mesh(
 						new THREE.SphereGeometry(50, 16, 16),
 						new THREE.MeshLambertMaterial({
@@ -60,18 +68,20 @@
 				sphere.position.x = 60;
 				sphere.position.y = 60;
 				scene.add(sphere);
-				
+				/*
+				// Add ambient light to the scene
 				var light = new THREE.AmbientLight(0x101010);
 				scene.add(light);
-				
-				// create a point light
-				var pointLight = new THREE.PointLight( 0xFFFFFF );
+				*/
+				// Add a point light to the scene
+				var pointLight = new THREE.PointLight(0xFFFFFF);
 
-				// set its position
-				pointLight.position.x = 0;
-				pointLight.position.y = 0;
-				pointLight.position.z = 130;
+				pointLight.position.x = -40;
+				pointLight.position.y = -50;
+				pointLight.position.z = 100;
 				scene.add(pointLight);
+				
+				// Render the scene using the defined camera
 				renderer.render(scene, camera);
 			}
 		</script>
