@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="js/libs/jquery-1.9.0/jquery.min.js"></script>
+		<script type="text/javascript" src="js/libs/three.js-r53/three.min.js"></script>
+		
+		<script id="vshader" type="x-shader/x-vertex">
+			
+		</script>
+		
+		<script id="fshader" type="x-shader/x-fragment">
+			
+		</script>
+		
+		<script type="text/javascript">
+			function startWebGL() {
+				// Define scene size
+				var HEIGHT = 600;
+				var WIDTH = 800;
+				
+				// Define camera properties
+				var VIEW_ANGLE = 45;
+				var ASPECT = WIDTH/HEIGHT;
+				var NEAR = 0.1;
+				var FAR = 10000.0;
+				
+				// Initialise the scene
+				var renderer = new THREE.WebGLRenderer();
+				var camera = new THREE.PerspectiveCamera(VIEW_ANGLE,
+						ASPECT,
+						NEAR,
+						FAR
+					);
+				
+				var scene = new THREE.Scene();
+				
+				camera.position.z = 300;
+				
+				renderer.setSize(WIDTH, HEIGHT);
+				renderer.setClearColorHex(0x333333, 1);
+				
+				$("#container").append(renderer.domElement);
+				
+				
+				
+				// Render the scene using the defined camera
+				renderer.render(scene, camera);
+			}
+		</script>
+	</head>
+	<body onload="startWebGL();">
+		<div id="container"></div>
+	</body>
+</html>
