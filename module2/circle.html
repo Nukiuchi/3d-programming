@@ -7,11 +7,28 @@
 		<script type="text/javascript" src="js/libs/three.js-r53/three.min.js"></script>
 		
 		<script id="vshader" type="x-shader/x-vertex">
+			attribute vec4 aColor;
 			
+			uniform float uPointSize;
+			uniform float uRadius;
+			
+			varying vec4 vColor;
+			
+			void main() {
+				gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+				gl_PointSize = uPointSize;
+				vColor = aColor;
+			}
 		</script>
 		
 		<script id="fshader" type="x-shader/x-fragment">
+			precision mediump float;
 			
+			varying vec4 vColor;
+			
+			void main() {
+				gl_FragColor = vColor;
+			}
 		</script>
 		
 		<script type="text/javascript">
@@ -43,7 +60,39 @@
 				
 				$("#container").append(renderer.domElement);
 				
+				var attributes = {
+					aColor: { type: 'c', value: [] }
+				};
+				var uniforms = {
+					uPointSize: { type: 'f', value: 3 },
+					uRadius: { type: 'f', value: 1 }
+				};
 				
+				var custMaterial = new THREE.ShaderMaterial({
+					attributes: attributes,
+					uniforms: uniforms,
+					vertexShader: $("#vshader").text(),
+					fragmentShader: $("#fshader").text()
+				});
+				var circleGeom = new THREE.Geometry();
+				
+				var numVertices = 16;
+				var angleIncrement = 2*Math.PI / numVertices;
+				
+				for(var curAngle = 0, curVertex=2; curAngle >= -(numVertices+1)*2*Math.PI/numVertices; curAngle-=angleIncrement, curVertex++) {
+					circleGeom.vertices.push(new THREE.Vector3(Math.cos(curAngle), Math.sin(curAngle), 0));
+					circleGeom.normals.push(new THREE.Vector3(0,0,1));
+					attributes.aColor.value.push(new THREE.Color(0x123F56));
+					
+					if(curVertex < numVertices) {
+						circleGeom.faces.push(new THREE.Face3(0, curVertex, curVertex-1));
+					}
+				}
+				
+				var circleMesh = new THREE.ParticleMesh(circleGeom, custMaterial);
+				circleMesh.scale.x = 50;
+				circleMesh.scale.y = 50;
+				scene.add(circleMesh);
 				
 				// Render the scene using the defined camera
 				renderer.render(scene, camera);
