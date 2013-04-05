@@ -118,12 +118,12 @@
 				app.colors = [];
 				app.indices = [];
 				
-				var numVertices = 16;
+				var numVertices = 32;
 				var angleIncrement = 2*Math.PI / numVertices;
 				
 				for(var curAngle = 0, i=0; curAngle >= -2*Math.PI; curAngle-=angleIncrement, i++) {
 					app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
-					app.colors.push(0x12/255, 0x3F/255, 0x56/255, 1.0);
+					app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
 					app.indices.push(i);
 				}
 				
@@ -158,7 +158,7 @@
 				mat4.identity(app.mvMatrix);
 
 				// Move drawing point
-				mat4.translate(app.mvMatrix, [0,0,-300]);
+				mat4.translate(app.mvMatrix, [0,0,-3]);
 
 				// Tell WebGL what to draw and how to read the data
 				gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
