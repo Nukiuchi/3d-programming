@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="js/libs/jquery-1.9.0/jquery.min.js"></script>
+		<script type="text/javascript" src="js/libs/three.js-r53/three.min.js"></script>
+		<script type="text/javascript" src="js/libs/glmatrix-0.9.5/glMatrix.min.js"></script>
+		
+		<script id="vshader" type="x-shader/x-vertex">
+			attribute vec4 aColor;
+			attribute vec3 aPosition;
+			
+			uniform float uPointSize;
+			uniform float uRadius;
+			uniform mat4 uMVMatrix;
+			uniform mat4 uPMatrix;
+			
+			varying vec4 vColor;
+			
+			void main() {
+				gl_Position = uPMatrix * uMVMatrix * vec4(aPosition, 1.0);
+				gl_PointSize = uPointSize;
+				vColor = aColor;
+			}
+		</script>
+		
+		<script id="fshader" type="x-shader/x-fragment">
+			precision mediump float;
+			
+			varying vec4 vColor;
+			
+			void main() {
+				gl_FragColor = vColor;
+			}
+		</script>
+		
+		<script type="text/javascript">
+			var gl;
+			var app = new Object;
+			
+			function runWebGL() {
+				init();
+				initShaderProgram();
+				initData();
+				initBuffers();
+				
+				render();
+			}
+			
+			function init() {
+				// Get WebGL context
+				var canvas = document.getElementById("canvas");
+				gl = canvas.getContext("experimental-webgl");
+				
+				app.WIDTH = canvas.width;
+				app.HEIGHT = canvas.height;
+				app.ASPECT = app.WIDTH / app.HEIGHT;
+				app.NEAR = 0.1;
+				app.FAR = 10000;
+				app.FOV = 45;
+				
+				if(!gl) {
+					alert("Initialisation failed.");
+				}
+				// Initialise WebGL
+				gl.clearColor(0x33/255, 0x33/255, 0x33/255, 1.0);
+				gl.enable(gl.DEPTH_TEST);
+			}
+			
+			function initShaderProgram() {
+				
+				// Create shaders
+				var vsScript = $("#vshader").text();
+				var fsScript = $("#fshader").text();
+				
+				app.vs = gl.createShader(gl.VERTEX_SHADER);
+				app.fs = gl.createShader(gl.FRAGMENT_SHADER);
+				gl.shaderSource(app.vs, vsScript);
+				gl.shaderSource(app.fs, fsScript);
+
+				gl.compileShader(app.vs);
+				if(!gl.getShaderParameter(app.vs, gl.COMPILE_STATUS)) {
+					alert("Vertex Shader:\n" + gl.getShaderInfoLog(app.vs));
+				}
+
+				gl.compileShader(app.fs);
+				if(!gl.getShaderParameter(app.fs, gl.COMPILE_STATUS)) {
+					alert("Fragment Shader:\n" + gl.getShaderInfoLog(app.fs));
+				}
+
+				// Create program and link shaders to it
+				app.program = gl.createProgram();
+				gl.attachShader(app.program, app.vs);
+				gl.attachShader(app.program, app.fs);
+				gl.linkProgram(app.program);
+
+				if(!gl.getProgramParameter(app.program, gl.LINK_STATUS)) {
+					alert("Shader Program:\n" + gl.getProgramInfoLog(app.program));
+				}
+
+				gl.useProgram(app.program);
+				
+				// Get access to shader's attributes
+				app.attrVec3Position = gl.getAttribLocation(app.program, "aPosition");
+				gl.enableVertexAttribArray(app.attrVec3Position);
+				app.attrVec4Color = gl.getAttribLocation(app.program, "aColor");
+				gl.enableVertexAttribArray(app.attrVec4Color);
+				app.uniFRadius = gl.getUniformLocation(app.program, "uRadius");
+				app.uniFPointSize = gl.getUniformLocation(app.program, "uPointSize");
+				app.uniMat4PMatrix = gl.getUniformLocation(app.program, "uPMatrix");
+				app.uniMat4MVMatrix = gl.getUniformLocation(app.program, "uMVMatrix");
+			}
+			
+			function initData() {
+				// Generate vertex data
+				app.vertices = [];
+				app.colors = [];
+				app.indices = [];
+				
+				var numVertices = 16;
+				var angleIncrement = 2*Math.PI / numVertices;
+				
+				for(var curAngle = 0, i=0; curAngle >= -2*Math.PI; curAngle-=angleIncrement, i++) {
+					app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
+					app.colors.push(0x12/255, 0x3F/255, 0x56/255, 1.0);
+					app.indices.push(i);
+				}
+				
+				app.pointSize = 3;
+				app.radius = 10;
+			}
+			
+			function initBuffers() {
+				// Create buffer and put vertices into it
+				app.vertexBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.vertices), gl.STATIC_DRAW);
+				
+				app.colorBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.colors), gl.STATIC_DRAW);
+				
+				app.elemBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
+				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(app.indices), gl.STATIC_DRAW);
+			}
+			
+			function render() {
+				// Clear the canvas
+				gl.viewport(0, 0, app.WIDTH, app.HEIGHT);
+				gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+				
+				// Define the perspective
+				app.pMatrix = mat4.create();
+				app.mvMatrix = mat4.create();
+				mat4.perspective(app.FOV, app.ASPECT, app.NEAR, app.FAR, app.pMatrix);
+				mat4.identity(app.mvMatrix);
+
+				// Move drawing point
+				mat4.translate(app.mvMatrix, [0,0,-300]);
+
+				// Tell WebGL what to draw and how to read the data
+				gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
+				gl.vertexAttribPointer(app.attrVec3Position, 3, gl.FLOAT, false, 0, 0);
+				gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
+				gl.vertexAttribPointer(app.attrVec4Color, 4, gl.FLOAT, false, 0, 0);
+
+				// Set uniform data
+				gl.uniform1f(app.uniFRadius, app.radius);
+				gl.uniform1f(app.uniFPointSize, app.pointSize);
+				gl.uniformMatrix4fv(app.uniMat4PMatrix, false, app.pMatrix);
+				gl.uniformMatrix4fv(app.uniMat4MVMatrix, false, app.mvMatrix);
+				
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
+				gl.drawElements(gl.TRIANGLE_FAN, app.indices.length, gl.UNSIGNED_BYTE, 0);
+			}
+			
+			$(function(){
+				$('input[name="drawtype"]:radio').change(
+					function(){
+						gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+						var drawtype = $('input[name="drawtype"]:checked').val();
+						switch(drawtype) {
+							case "point":
+								gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
+								gl.drawElements(gl.POINT_SPRITE, app.indices.length, gl.UNSIGNED_BYTE, 0);
+								break;
+							case "line":
+								gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
+								gl.drawElements(gl.LINE_LOOP, app.indices.length, gl.UNSIGNED_BYTE, 0);
+								break;
+							case "poly":
+								gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
+								gl.drawElements(gl.TRIANGLE_FAN, app.indices.length, gl.UNSIGNED_BYTE, 0);
+								break;
+						}
+               }
+				);
+			});
+		</script>
+	</head>
+	<body onload="runWebGL();">
+		<p>
+			Select draw type:<br />
+			<label><input type="radio" name="drawtype" value="point" />Point Sprite<br /></label>
+			<label><input type="radio" name="drawtype" value="line" />Line Loop<br /></label>
+			<label><input type="radio" name="drawtype" value="poly" checked="checked" />Polygon<br /></label>
+		</p>
+		<canvas id="canvas" width="800" height="600"></canvas>
+	</body>
+</html>
