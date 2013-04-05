@@ -46,6 +46,9 @@
 			var camera;
 			var scene;
 			
+			var custMaterial;
+			var circleGeom;
+			var circleMesh;
 			
 			function startWebGL() {
 				
@@ -70,17 +73,17 @@
 					aColor: { type: 'c', value: [] }
 				};
 				var uniforms = {
-					uPointSize: { type: 'f', value: 3 },
+					uPointSize: { type: 'f', value: 5 },
 					uRadius: { type: 'f', value: 1 }
 				};
 				
-				var custMaterial = new THREE.ShaderMaterial({
+				custMaterial = new THREE.ShaderMaterial({
 					attributes: attributes,
 					uniforms: uniforms,
 					vertexShader: $("#vshader").text(),
 					fragmentShader: $("#fshader").text()
 				});
-				var circleGeom = new THREE.Geometry();
+				circleGeom = new THREE.Geometry();
 				
 				var numVertices = 16;
 				var angleIncrement = 2*Math.PI / numVertices;
@@ -95,9 +98,8 @@
 					}
 				}
 				
-				var drawtype = $('input[name="drawtype"]:checked').val();
 				
-				var circleMesh = new THREE.Mesh(circleGeom, custMaterial);
+				circleMesh = new THREE.Mesh(circleGeom, custMaterial);
 				circleMesh.scale.x = 50;
 				circleMesh.scale.y = 50;
 				scene.add(circleMesh);
@@ -111,6 +113,36 @@
 				// Render the scene using the defined camera
 				renderer.render(scene, camera);
 			}
+			$(function(){
+				$('input[name="drawtype"]:radio').change(
+					function(){
+						scene.remove(circleMesh);
+						var drawtype = $('input[name="drawtype"]:checked').val();
+						switch(drawtype) {
+							case "point":
+								circleMesh = new THREE.ParticleSystem(circleGeom, custMaterial);
+								circleMesh.scale.x = 50;
+								circleMesh.scale.y = 50;
+								scene.add(circleMesh);
+								break;
+							case "line":
+								circleMesh = new THREE.Line(circleGeom, custMaterial);
+								circleMesh.scale.x = 50;
+								circleMesh.scale.y = 50;
+								scene.add(circleMesh);
+								break;
+							case "poly":
+								circleMesh = new THREE.Mesh(circleGeom, custMaterial);
+								circleMesh.scale.x = 50;
+								circleMesh.scale.y = 50;
+								scene.add(circleMesh);
+								break;
+						}
+						// Render the scene using the defined camera
+						renderer.render(scene, camera);
+               }
+				);
+});
 		</script>
 	</head>
 	<body onload="startWebGL();">
