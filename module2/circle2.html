@@ -6,10 +6,12 @@
 		<script type="text/javascript" src="js/libs/jquery-1.9.0/jquery.min.js"></script>
 		<script type="text/javascript" src="js/libs/three.js-r53/three.min.js"></script>
 		<script type="text/javascript" src="js/libs/glmatrix-0.9.5/glMatrix.min.js"></script>
+		<script type="text/javascript" src="js/libs/webgl-utils/webgl-utils.js"></script>
 		
 		<script id="vshader" type="x-shader/x-vertex">
-			attribute vec4 aColor;
-			attribute vec3 aPosition;
+			//attribute vec4 aColor;
+			//attribute vec3 aPosition;
+			attribute float aAngle;
 			
 			uniform float uPointSize;
 			uniform float uRadius;
@@ -17,21 +19,54 @@
 			uniform mat4 uPMatrix;
 			
 			varying vec4 vColor;
+			varying float vAngle;
+			
+			const float fZero = 0.0;
+			const float fOne = 1.0;
+			const float fTwo = 2.0;
+			
+			vec4 transform() {
+				//app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
+				vec4 pos = vec4(cos(aAngle) * uRadius, sin(aAngle) * uRadius, fZero, fOne);
+				return pos;
+			}
+			
+			vec4 color() {
+				//app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
+				vec4 color = vec4(sin(aAngle*fTwo), cos(aAngle/fTwo), cos(aAngle), fOne);
+				return color;
+			}
 			
 			void main() {
-				gl_Position = uPMatrix * uMVMatrix * vec4(aPosition, 1.0);
+				gl_Position = uPMatrix * uMVMatrix * transform();
 				gl_PointSize = uPointSize;
-				vColor = aColor;
+				vColor = color();
+				vAngle = aAngle;
 			}
 		</script>
 		
 		<script id="fshader" type="x-shader/x-fragment">
 			precision mediump float;
 			
+			uniform bool uUseVaryingColor;
+			
 			varying vec4 vColor;
+			varying float vAngle;
+			
+			const float fOne = 1.0;
+			const float fTwo = 2.0;
+			
+			vec4 color() {
+				vec4 color = vec4(sin(vAngle*fTwo), cos(vAngle/fTwo), cos(vAngle), fOne);
+				return color;
+			}
 			
 			void main() {
-				gl_FragColor = vColor;
+				if(uUseVaryingColor) {
+					gl_FragColor = vColor;
+				} else {
+					gl_FragColor = color();
+				}
 			}
 		</script>
 		
@@ -45,13 +80,14 @@
 				initData();
 				initBuffers();
 				
-				render();
+				update();
+				//render();
 			}
 			
 			function init() {
 				// Get WebGL context
-				var canvas = document.getElementById("canvas");
-				gl = canvas.getContext("experimental-webgl");
+				app.canvas = document.getElementById("canvas");
+				gl = app.canvas.getContext("experimental-webgl");
 				
 				app.WIDTH = canvas.width;
 				app.HEIGHT = canvas.height;
@@ -102,10 +138,13 @@
 				gl.useProgram(app.program);
 				
 				// Get access to shader's attributes
-				app.attrVec3Position = gl.getAttribLocation(app.program, "aPosition");
-				gl.enableVertexAttribArray(app.attrVec3Position);
-				app.attrVec4Color = gl.getAttribLocation(app.program, "aColor");
-				gl.enableVertexAttribArray(app.attrVec4Color);
+				//app.attrVec3Position = gl.getAttribLocation(app.program, "aPosition");
+				//gl.enableVertexAttribArray(app.attrVec3Position);
+				//app.attrVec4Color = gl.getAttribLocation(app.program, "aColor");
+				//gl.enableVertexAttribArray(app.attrVec4Color);
+				app.attrFAngle = gl.getAttribLocation(app.program, "aAngle");
+				gl.enableVertexAttribArray(app.attrFAngle);
+				app.uniBVarColor = gl.getUniformLocation(app.program, "uUseVaryingColor");
 				app.uniFRadius = gl.getUniformLocation(app.program, "uRadius");
 				app.uniFPointSize = gl.getUniformLocation(app.program, "uPointSize");
 				app.uniMat4PMatrix = gl.getUniformLocation(app.program, "uPMatrix");
@@ -117,33 +156,42 @@
 				app.vertices = [];
 				app.colors = [];
 				app.indices = [];
+				app.angles = [];
 				
-				var numVertices = 32;
+				var numVertices = 50000;
 				var angleIncrement = 2*Math.PI / numVertices;
 				
 				for(var curAngle = 0, i=0; curAngle >= -2*Math.PI; curAngle-=angleIncrement, i++) {
 					app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
 					app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
 					app.indices.push(i);
+					app.angles.push(curAngle);
 				}
 				
+				// Initialise variables
 				app.pointSize = 3;
-				app.radius = 10;
+				app.radius = 4.0;
+				app.varyingColor = true;
+				app.drawType = gl.TRIANGLE_FAN;
 			}
 			
 			function initBuffers() {
 				// Create buffer and put vertices into it
-				app.vertexBuffer = gl.createBuffer();
-				gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
-				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.vertices), gl.STATIC_DRAW);
+				//app.vertexBuffer = gl.createBuffer();
+				//gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
+				//gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.vertices), gl.STATIC_DRAW);
 				
-				app.colorBuffer = gl.createBuffer();
-				gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
-				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.colors), gl.STATIC_DRAW);
+				//app.colorBuffer = gl.createBuffer();
+				//gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
+				//gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.colors), gl.STATIC_DRAW);
 				
 				app.elemBuffer = gl.createBuffer();
 				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
-				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint8Array(app.indices), gl.STATIC_DRAW);
+				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(app.indices), gl.STATIC_DRAW);
+				
+				app.angleBuffer = gl.createBuffer();
+				gl.bindBuffer(gl.ARRAY_BUFFER, app.angleBuffer);
+				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.angles), gl.STATIC_DRAW);
 			}
 			
 			function render() {
@@ -158,41 +206,58 @@
 				mat4.identity(app.mvMatrix);
 
 				// Move drawing point
-				mat4.translate(app.mvMatrix, [0,0,-3]);
+				mat4.translate(app.mvMatrix, [0,0,-10]);
 
 				// Tell WebGL what to draw and how to read the data
-				gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
-				gl.vertexAttribPointer(app.attrVec3Position, 3, gl.FLOAT, false, 0, 0);
-				gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
-				gl.vertexAttribPointer(app.attrVec4Color, 4, gl.FLOAT, false, 0, 0);
-
+				//gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
+				//gl.vertexAttribPointer(app.attrVec3Position, 3, gl.FLOAT, false, 0, 0);
+				//gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
+				//gl.vertexAttribPointer(app.attrVec4Color, 4, gl.FLOAT, false, 0, 0);
+				gl.bindBuffer(gl.ARRAY_BUFFER, app.angleBuffer);
+				gl.vertexAttribPointer(app.attrFAngle, 1, gl.FLOAT, false, 0, 0);
+				
 				// Set uniform data
+				gl.uniform1f(app.uniBVarColor, app.varyingColor);
 				gl.uniform1f(app.uniFRadius, app.radius);
 				gl.uniform1f(app.uniFPointSize, app.pointSize);
 				gl.uniformMatrix4fv(app.uniMat4PMatrix, false, app.pMatrix);
 				gl.uniformMatrix4fv(app.uniMat4MVMatrix, false, app.mvMatrix);
 				
 				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
-				gl.drawElements(gl.TRIANGLE_FAN, app.indices.length, gl.UNSIGNED_BYTE, 0);
+				gl.drawElements(app.drawType, app.indices.length, gl.UNSIGNED_SHORT, 0);
+			}
+			
+			function update() {
+				window.requestAnimFrame(update, app.canvas);
+				render();
 			}
 			
 			$(function(){
 				$('input[name="drawtype"]:radio').change(
 					function(){
-						gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 						var drawtype = $('input[name="drawtype"]:checked').val();
 						switch(drawtype) {
 							case "point":
-								gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
-								gl.drawElements(gl.POINT_SPRITE, app.indices.length, gl.UNSIGNED_BYTE, 0);
+								app.drawType = gl.POINT_SPRITE;
 								break;
 							case "line":
-								gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
-								gl.drawElements(gl.LINE_LOOP, app.indices.length, gl.UNSIGNED_BYTE, 0);
+								app.drawType = gl.LINE_LOOP;
 								break;
 							case "poly":
-								gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
-								gl.drawElements(gl.TRIANGLE_FAN, app.indices.length, gl.UNSIGNED_BYTE, 0);
+								app.drawType = gl.TRIANGLE_FAN;
+								break;
+						}
+               }
+				);
+				$('input[name="varying"]:radio').change(
+					function(){
+						var varying = $('input[name="varying"]:checked').val();
+						switch(varying) {
+							case "color":
+								app.varyingColor = true;
+								break;
+							case "angle":
+								app.varyingColor = false;
 								break;
 						}
                }
@@ -201,12 +266,22 @@
 		</script>
 	</head>
 	<body onload="runWebGL();">
-		<p>
-			Select draw type:<br />
-			<label><input type="radio" name="drawtype" value="point" />Point Sprite<br /></label>
-			<label><input type="radio" name="drawtype" value="line" />Line Loop<br /></label>
-			<label><input type="radio" name="drawtype" value="poly" checked="checked" />Polygon<br /></label>
-		</p>
+		<table>
+			<tr>
+				<td>
+					Select draw type:<br />
+					<label><input type="radio" name="drawtype" value="point" />Point Sprite<br /></label>
+					<label><input type="radio" name="drawtype" value="line" />Line Loop<br /></label>
+					<label><input type="radio" name="drawtype" value="poly" checked="checked" />Polygon<br /></label>
+				</td>
+				<td>
+					Select between varying color or angle:<br />
+					<label><input type="radio" name="varying" value="color" checked="checked" />Varying Color<br /></label>
+					<label><input type="radio" name="varying" value="angle" />Varying Angle<br /></label>
+					
+				</td>
+			</tr>
+		</table>
 		<canvas id="canvas" width="800" height="600"></canvas>
 	</body>
 </html>
