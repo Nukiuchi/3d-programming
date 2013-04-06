@@ -26,13 +26,11 @@
 			const float fTwo = 2.0;
 			
 			vec4 transform() {
-				//app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
 				vec4 pos = vec4(cos(aAngle) * uRadius, sin(aAngle) * uRadius, fZero, fOne);
 				return pos;
 			}
 			
 			vec4 color() {
-				//app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
 				vec4 color = vec4(sin(aAngle*fTwo), cos(aAngle/fTwo), cos(aAngle), fOne);
 				return color;
 			}
@@ -57,7 +55,6 @@
 			const float fTwo = 2.0;
 			
 			vec4 color() {
-				vec4 color = vec4(sin(vAngle*fTwo), cos(vAngle/fTwo), cos(vAngle), fOne);
 				return color;
 			}
 			
@@ -81,7 +78,6 @@
 				initBuffers();
 				
 				update();
-				//render();
 			}
 			
 			function init() {
@@ -138,6 +134,7 @@
 				gl.useProgram(app.program);
 				
 				// Get access to shader's attributes
+				
 				//app.attrVec3Position = gl.getAttribLocation(app.program, "aPosition");
 				//gl.enableVertexAttribArray(app.attrVec3Position);
 				//app.attrVec4Color = gl.getAttribLocation(app.program, "aColor");
@@ -153,12 +150,13 @@
 			
 			function initData() {
 				// Generate vertex data
+				
 				//app.vertices = [];
 				//app.colors = [];
 				app.indices = [];
 				app.angles = [];
 				
-				app.numVertices = 65535;
+				app.numVertices = 35;
 				var angleIncrement = 2*Math.PI / app.numVertices;
 				
 				for(var curAngle = 0, i=0; curAngle >= -2*Math.PI; curAngle-=angleIncrement, i++) {
@@ -177,6 +175,7 @@
 			
 			function initBuffers() {
 				// Create buffer and put vertices into it
+				
 				//app.vertexBuffer = gl.createBuffer();
 				//gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
 				//gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.vertices), gl.STATIC_DRAW);
@@ -208,7 +207,8 @@
 				// Move drawing point
 				mat4.translate(app.mvMatrix, [0,0,-10]);
 
-				// Tell WebGL what to draw and how to read the data
+				// Tell WebGL where to look for the data for attributes and how to read it
+				
 				//gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
 				//gl.vertexAttribPointer(app.attrVec3Position, 3, gl.FLOAT, false, 0, 0);
 				//gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
