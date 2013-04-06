@@ -153,17 +153,17 @@
 			
 			function initData() {
 				// Generate vertex data
-				app.vertices = [];
-				app.colors = [];
+				//app.vertices = [];
+				//app.colors = [];
 				app.indices = [];
 				app.angles = [];
 				
-				var numVertices = 50000;
-				var angleIncrement = 2*Math.PI / numVertices;
+				app.numVertices = 65535;
+				var angleIncrement = 2*Math.PI / app.numVertices;
 				
 				for(var curAngle = 0, i=0; curAngle >= -2*Math.PI; curAngle-=angleIncrement, i++) {
-					app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
-					app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
+					//app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
+					//app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
 					app.indices.push(i);
 					app.angles.push(curAngle);
 				}
