@@ -13,29 +13,36 @@
 			attribute vec4 aColor;
 			
 			uniform float uPointSize;
+			uniform float uRadius;
 			uniform mat4 uMVMatrix;
 			uniform mat4 uPMatrix;
 			
 			varying vec4 vColor;
+			varying vec3 vTexCoord;
 			
 			const float fZero = 0.0;
 			const float fOne = 1.0;
 			const float fTwo = 2.0;
 			
 			void main() {
-				gl_Position = uPMatrix * uMVMatrix * vec4(aPosition, fOne);
+				gl_Position = uPMatrix * uMVMatrix * vec4(aPosition.x*uRadius, aPosition.y*uRadius, aPosition.z*uRadius, fOne);
 				gl_PointSize = uPointSize;
 				vColor = aColor;
+				vTexCoord = aPosition;
 			}
 		</script>
 		
 		<script id="fshader" type="x-shader/x-fragment">
 			precision mediump float;
 
+			uniform samplerCube uSampler;
+			
 			varying vec4 vColor;
+			varying vec3 vTexCoord;
 
 			void main() {
-				gl_FragColor = vColor;
+				//gl_FragColor = vColor;
+				gl_FragColor = textureCube(uSampler, vTexCoord);
 
 			}
 		</script>
@@ -44,10 +51,11 @@
 			var gl;
 			var app = new Object;
 			
-			function runWebGL() {
+			function runWebGL() {			
 				init();
 				initShaderProgram();
 				initData();
+				initTextures();
 				initBuffers();
 				
 				update();
@@ -71,6 +79,10 @@
 				// Initialise WebGL
 				gl.clearColor(0x33/255, 0x33/255, 0x33/255, 1.0);
 				gl.enable(gl.DEPTH_TEST);
+				
+				app.canvas.onmousedown = handleMouseDown;
+				document.onmouseup = handleMouseUp;
+				document.onmousemove = handleMouseMove;
 			}
 			
 			function initShaderProgram() {
@@ -113,30 +125,86 @@
 				app.attrVec4Color = gl.getAttribLocation(app.program, "aColor");
 				gl.enableVertexAttribArray(app.attrVec4Color);
 				app.uniFPointSize = gl.getUniformLocation(app.program, "uPointSize");
+				app.uniFRadius = gl.getUniformLocation(app.program, "uRadius");
 				app.uniMat4PMatrix = gl.getUniformLocation(app.program, "uPMatrix");
 				app.uniMat4MVMatrix = gl.getUniformLocation(app.program, "uMVMatrix");
+				app.uniSampler3D = gl.getUniformLocation(app.program, "uSampler");
+			}
+			
+			function initTextures() {
+				app.texture3d = gl.createTexture();
+				
+				app.texture3d.posx = new Image();
+				app.texture3d.posx.target = gl.TEXTURE_CUBE_MAP_POSITIVE_X;
+				app.texture3d.posx.onload = function() { handleTexture3DLoaded(app.texture3d.posx, app.texture3d); };
+				app.texture3d.posx.src = "textures/posx.jpg";
+
+				app.texture3d.posy = new Image();
+				app.texture3d.posy.onload = function() { handleTexture3DLoaded(app.texture3d.posy, app.texture3d); };
+				app.texture3d.posy.target = gl.TEXTURE_CUBE_MAP_POSITIVE_Y;
+				app.texture3d.posy.src = "textures/posy.jpg";
+
+				app.texture3d.posz = new Image();
+				app.texture3d.posz.onload = function() { handleTexture3DLoaded(app.texture3d.posz, app.texture3d); };
+				app.texture3d.posz.target = gl.TEXTURE_CUBE_MAP_POSITIVE_Z;
+				app.texture3d.posz.src = "textures/posz.jpg";
+
+				app.texture3d.negx = new Image();
+				app.texture3d.negx.onload = function() { handleTexture3DLoaded(app.texture3d.negx, app.texture3d); };
+				app.texture3d.negx.target = gl.TEXTURE_CUBE_MAP_NEGATIVE_X;
+				app.texture3d.negx.src = "textures/negx.jpg";
+
+				app.texture3d.negy = new Image();
+				app.texture3d.negy.onload = function() { handleTexture3DLoaded(app.texture3d.negy, app.texture3d); };
+				app.texture3d.negy.target = gl.TEXTURE_CUBE_MAP_NEGATIVE_Y;
+				app.texture3d.negy.src = "textures/negy.jpg";
+
+				app.texture3d.negz = new Image();
+				app.texture3d.negz.onload = function() { handleTexture3DLoaded(app.texture3d.negz, app.texture3d); };
+				app.texture3d.negz.target = gl.TEXTURE_CUBE_MAP_NEGATIVE_Z;
+				app.texture3d.negz.src = "textures/negz.jpg";
 			}
 			
 			function initData() {
+				// Initialise variables
+				app.pointSize = 3;
+				app.radius = 100;
+				app.drawType = gl.TRIANGLE_STRIP;
+				
 				// Generate vertex data
 				
 				app.vertices = [];
 				app.colors = [];
+				app.texCoords = [];
 				app.indices = [];
+
+				// Vertices for a cube
+				app.vertices.push(
+					-1, -1, 1,
+					1, -1, 1,
+					1, 1, 1,
+					-1, 1, 1,
+					-1, -1, -1,
+					1, -1, -1,
+					1, 1, -1,
+					-1, 1, -1
+				);
 				
-				app.numVertices = 35;
-				var angleIncrement = 2*Math.PI / app.numVertices;
+				// Colors
+				app.colors.push(1.0, 0, 0, 1.0);
+				app.colors.push(0, 0, 0, 1.0);
+				app.colors.push(0, 1.0, 0, 1.0);
+				app.colors.push(0, 0, 1.0, 1.0);
+				app.colors.push(1.0, 1.0, 0, 1.0);
+				app.colors.push(1.0, 0, 1.0, 1.0);
+				app.colors.push(0, 1.0, 255, 1.0);
+				app.colors.push(1.0, 1.0, 1.0, 1.0);
 				
-				for(var curAngle = 0, i=0; curAngle >= -2*Math.PI; curAngle-=angleIncrement, i++) {
-					app.vertices.push(Math.cos(curAngle), Math.sin(curAngle), 0);
-					app.colors.push(Math.sin(curAngle*2), Math.cos(curAngle/2), Math.cos(curAngle), 1.0);
-					app.indices.push(i);
-				}
+				// Indices for a cube
+				app.indices.push(0, 1, 3, 2, 6, 1, 5, 4, 6, 7, 3, 4, 0, 1);
 				
-				// Initialise variables
-				app.pointSize = 3;
-				app.radius = 4.0;
-				app.drawType = gl.TRIANGLE_FAN;
+				// Indices for a quad
+				//app.indices.push(0, 1, 3, 2);
 			}
 			
 			function initBuffers() {
@@ -149,7 +217,7 @@
 				app.colorBuffer = gl.createBuffer();
 				gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(app.colors), gl.STATIC_DRAW);
-				
+
 				app.elemBuffer = gl.createBuffer();
 				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, app.elemBuffer);
 				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(app.indices), gl.STATIC_DRAW);
@@ -167,17 +235,23 @@
 				mat4.identity(app.mvMatrix);
 
 				// Move drawing point
-				mat4.translate(app.mvMatrix, [0,0,-10]);
+				mat4.translate(app.mvMatrix, [0,0,0]);
+				mat4.multiply(app.pMatrix, app.rotationMatrix);
 
 				// Tell WebGL where to look for the data for attributes and how to read it
 				
 				gl.bindBuffer(gl.ARRAY_BUFFER, app.vertexBuffer);
 				gl.vertexAttribPointer(app.attrVec3Position, 3, gl.FLOAT, false, 0, 0);
 				gl.bindBuffer(gl.ARRAY_BUFFER, app.colorBuffer);
-				gl.vertexAttribPointer(app.attrVec4Color, 4, gl.FLOAT, false, 0, 0);
+				gl.vertexAttribPointer(app.attrVec3TexCoord, 3, gl.FLOAT, false, 0, 0);
+				
+				gl.activeTexture(gl.TEXTURE0);
+				gl.bindTexture(gl.TEXTURE_CUBE_MAP, app.texture3d);
 				
 				// Set uniform data
+				gl.uniform1i(app.uniSampler3D, 0);
 				gl.uniform1f(app.uniFPointSize, app.pointSize);
+				gl.uniform1f(app.uniFRadius, app.radius);
 				gl.uniformMatrix4fv(app.uniMat4PMatrix, false, app.pMatrix);
 				gl.uniformMatrix4fv(app.uniMat4MVMatrix, false, app.mvMatrix);
 				
@@ -188,6 +262,50 @@
 			function update() {
 				window.requestAnimFrame(update, app.canvas);
 				render();
+			}
+			
+			function handleTexture3DLoaded(image, texture) {
+				gl.bindTexture(gl.TEXTURE_CUBE_MAP, texture);
+				gl.texImage2D(image.target, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+				gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+				gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+				gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+			}
+			
+			app.mouseDown = false;
+			app.lastMouseX = null;
+			app.lastMouseY = null;
+			
+			app.rotationMatrix = mat4.create();
+			mat4.identity(app.rotationMatrix);
+			
+			function handleMouseDown(event) {
+				app.mouseDown = true;
+				app.lastMouseX = event.clientX;
+				app.lastMouseY = event.clientY;
+			}
+			function handleMouseUp(event) {
+				app.mouseDown = false;
+			}
+			function handleMouseMove(event) {
+				if(!app.mouseDown) return;
+				
+				var newX = event.clientX;
+				var newY = event.clientY;
+				
+				var deltaX = newX - app.lastMouseX;
+				var newRotationMatrix = mat4.create();
+				mat4.identity(newRotationMatrix);
+				mat4.rotate(newRotationMatrix, deltaX / 180, [0, 1, 0]);
+				
+				var deltaY = newY - app.lastMouseY;
+				mat4.rotate(newRotationMatrix, deltaY / 180, [1, 0, 0]);
+				
+				mat4.multiply(newRotationMatrix, app.rotationMatrix, app.rotationMatrix);
+				
+				app.lastMouseX = newX;
+				app.lastMouseY = newY;
 			}
 			
 			$(function(){
@@ -202,7 +320,7 @@
 								app.drawType = gl.LINE_LOOP;
 								break;
 							case "poly":
-								app.drawType = gl.TRIANGLE_FAN;
+								app.drawType = gl.TRIANGLE_STRIP;
 								break;
 						}
                }
