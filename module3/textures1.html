@@ -66,8 +66,11 @@
 				app.canvas = document.getElementById("canvas");
 				gl = app.canvas.getContext("experimental-webgl");
 				
-				app.WIDTH = canvas.width;
-				app.HEIGHT = canvas.height;
+				app.canvas.height = window.innerHeight-21;
+				app.canvas.width = window.innerWidth-10;
+				
+				app.WIDTH = app.canvas.width;
+				app.HEIGHT = app.canvas.height;
 				app.ASPECT = app.WIDTH / app.HEIGHT;
 				app.NEAR = 0.1;
 				app.FAR = 10000;
@@ -307,32 +310,9 @@
 				app.lastMouseX = newX;
 				app.lastMouseY = newY;
 			}
-			
-			$(function(){
-				$('input[name="drawtype"]:radio').change(
-					function(){
-						var drawtype = $('input[name="drawtype"]:checked').val();
-						switch(drawtype) {
-							case "point":
-								app.drawType = gl.POINT_SPRITE;
-								break;
-							case "line":
-								app.drawType = gl.LINE_LOOP;
-								break;
-							case "poly":
-								app.drawType = gl.TRIANGLE_STRIP;
-								break;
-						}
-               }
-				);
-			});
 		</script>
 	</head>
 	<body onload="runWebGL();">
-		Select draw type:<br />
-		<label><input type="radio" name="drawtype" value="point" />Point Sprite<br /></label>
-		<label><input type="radio" name="drawtype" value="line" />Line Loop<br /></label>
-		<label><input type="radio" name="drawtype" value="poly" checked="checked" />Polygon<br /></label>
 		<canvas id="canvas" width="800" height="600"></canvas>
 	</body>
 </html>
