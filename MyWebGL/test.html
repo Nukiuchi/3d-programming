@@ -1,0 +1,67 @@
+<!--
+To change this template, choose Tools | Templates
+and open the template in the editor.
+-->
+<!DOCTYPE html>
+<html>
+	<head>
+		<title></title>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<script type="text/javascript" src="js/libs/jquery-1.9.0/jquery.min.js"></script>
+		<script type="text/javascript" src="js/libs/three.js-r57/three.min.js"></script>
+		<script type="text/javascript" src="js/libs/glmatrix-0.9.5/glMatrix.min.js"></script>
+		<script type="text/javascript" src="js/libs/webgl-utils/webgl-utils.js"></script>
+		<script type="text/javascript" src="js/mywebgl.js"></script>
+		
+		<script id="vshader" type="x-shader/x-vertex">
+			attribute vec3 aPosition;
+			
+			uniform float uPointSize;
+			uniform float uRadius;
+			uniform mat4 uMVMatrix;
+			uniform mat4 uPMatrix;
+			
+			varying vec3 vTexCoord;
+			
+			const float fZero = 0.0;
+			const float fOne = 1.0;
+			const float fTwo = 2.0;
+			
+			void main() {
+				gl_Position = uPMatrix * uMVMatrix * vec4(aPosition.x*uRadius, aPosition.y*uRadius, aPosition.z*uRadius, fOne);
+				gl_PointSize = uPointSize;
+				vTexCoord = aPosition;
+			}
+		</script>
+		
+		<script id="fshader" type="x-shader/x-fragment">
+			precision mediump float;
+
+			uniform samplerCube uSampler;
+			
+			varying vec3 vTexCoord;
+
+			void main() {
+				gl_FragColor = textureCube(uSampler, vTexCoord);
+
+			}
+		</script>
+		
+		<script type="text/javascript">
+			var gl;
+			var app;
+			function startWebGL() {
+				app = new MyWebGL();
+				app.init("canvas", 1024, 768);
+				
+				gl = canvas.getContext("experimental-webgl");
+				
+				gl.clearColor(0.0, 0.0, 0.0, 1.0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+			}
+		</script>
+	</head>
+	<body onload="startWebGL();">
+		<canvas id="canvas" width="800" height="600"></canvas>
+	</body>
+</html>
